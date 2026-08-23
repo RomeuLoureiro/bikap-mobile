@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>BIKAP Mobile</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #000;
+            color: #fff;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .box {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 54px;
+            line-height: 1;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            font-size: 13px;
+            letter-spacing: 2px;
+            margin-bottom: 28px;
+            color: #ddd;
+        }
+
+        .status {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .detail {
+            color: #aaa;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .spinner {
+            width: 46px;
+            height: 46px;
+            margin: 0 auto 22px auto;
+            border: 5px solid rgba(255,255,255,.18);
+            border-top-color: #18a45b;
+            border-radius: 50%;
+            animation: spin .85s linear infinite;
+        }
+
+        .retry {
+            display: none;
+            width: 100%;
+            margin-top: 22px;
+            padding: 14px;
+            border: 0;
+            border-radius: 9px;
+            background: #159b55;
+            color: white;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <div class="logo">BIKAP</div>
+        <div class="sub">BIKE ASSEMBLY PORTUGAL</div>
+
+        <div class="spinner" id="spinner"></div>
+
+        <div class="status" id="status">
+            A ligar ao BIKAP Mobile...
+        </div>
+
+        <div class="detail" id="detail">
+            A procurar o servidor disponível.
+        </div>
+
+        <button
+            class="retry"
+            id="retry"
+            onclick="loadCurrentUrl()"
+        >
+            TENTAR NOVAMENTE
+        </button>
+    </div>
+
+    <script>
+        async function loadCurrentUrl() {
+            const status = document.getElementById("status");
+            const detail = document.getElementById("detail");
+            const retry = document.getElementById("retry");
+            const spinner = document.getElementById("spinner");
+
+            retry.style.display = "none";
+            spinner.style.display = "block";
+
+            status.textContent = "A ligar ao BIKAP Mobile...";
+            detail.textContent = "A procurar o servidor disponível.";
+
+            try {
+                const response = await fetch(
+                    "current.json?ts=" + Date.now(),
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Não foi possível ler a ligação atual."
+                    );
+                }
+
+                const data = await response.json();
+
+                const url = (
+                    data.url || ""
+                ).trim();
+
+                if (
+                    !url
+                    || !url.startsWith("https://")
+                ) {
+                    throw new Error(
+                        "Ainda não existe uma ligação Mobile ativa."
+                    );
+                }
+
+                status.textContent = "Ligação encontrada";
+                detail.textContent = "A abrir o BIKAP...";
+
+                window.location.replace(url);
+
+            } catch (error) {
+                spinner.style.display = "none";
+
+                status.textContent = "BIKAP Mobile indisponível";
+
+                detail.textContent =
+                    "O servidor pode estar desligado ou a ligação ainda não foi atualizada.";
+
+                retry.style.display = "block";
+            }
+        }
+
+        loadCurrentUrl();
+    </script>
+</body>
+</html>
