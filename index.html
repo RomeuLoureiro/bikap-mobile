@@ -118,6 +118,38 @@
     </div>
 
     <script>
+        const FIXED_BASE_URL = "https://romeuloureiro.github.io/bikap-mobile/";
+
+        function isStandalone() {
+            return (
+                window.matchMedia("(display-mode: standalone)").matches
+                || window.navigator.standalone === true
+            );
+        }
+
+        function isInstallMode() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get("install") === "1";
+        }
+
+        function showInstallMode() {
+            const status = document.getElementById("status");
+            const detail = document.getElementById("detail");
+            const retry = document.getElementById("retry");
+            const spinner = document.getElementById("spinner");
+
+            spinner.style.display = "none";
+            retry.style.display = "none";
+
+            status.textContent = "Adicionar BIKAP ao ecrã principal";
+            detail.innerHTML = `
+                Este endereço é o link fixo do BIKAP.<br><br>
+                No iPhone toque em <strong>Partilhar</strong> →
+                <strong>Adicionar ao ecrã principal</strong>.<br><br>
+                Depois abra sempre o BIKAP por esse novo ícone.
+            `;
+        }
+
         async function loadCurrentUrl() {
             const status = document.getElementById("status");
             const detail = document.getElementById("detail");
@@ -132,51 +164,48 @@
 
             try {
                 const response = await fetch(
-                    "current.json?ts=" + Date.now(),
-                    {
-                        cache: "no-store"
-                    }
+                    FIXED_BASE_URL + "current.json?ts=" + Date.now(),
+                    { cache: "no-store" }
                 );
 
                 if (!response.ok) {
-                    throw new Error(
-                        "Não foi possível ler a ligação atual."
-                    );
+                    throw new Error("Não foi possível ler a ligação atual.");
                 }
 
                 const data = await response.json();
-
-                const url = (
-                    data.url || ""
-                ).trim();
+                const url = (data.url || "").trim();
 
                 if (
                     !url
                     || !url.startsWith("https://")
+                    || !url.includes(".trycloudflare.com")
                 ) {
-                    throw new Error(
-                        "Ainda não existe uma ligação Mobile ativa."
-                    );
+                    throw new Error("Ainda não existe uma ligação Mobile válida.");
                 }
 
                 status.textContent = "Ligação encontrada";
                 detail.textContent = "A abrir o BIKAP...";
 
+                // Nunca guardar o endereço temporário. Em cada abertura,
+                // volta a consultar current.json e usa o túnel atual.
                 window.location.replace(url);
 
             } catch (error) {
                 spinner.style.display = "none";
-
                 status.textContent = "BIKAP Mobile indisponível";
-
                 detail.textContent =
                     "O servidor pode estar desligado ou a ligação ainda não foi atualizada.";
-
                 retry.style.display = "block";
             }
         }
 
-        loadCurrentUrl();
+        // ?install=1 fica no endereço fixo enquanto é criado o ícone.
+        // Quando o ícone é aberto, resolve sempre o túnel atual.
+        if (isInstallMode() && !isStandalone()) {
+            showInstallMode();
+        } else {
+            loadCurrentUrl();
+        }
     </script>
 </body>
 </html>
